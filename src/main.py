@@ -24,31 +24,31 @@ def floyd_steinberg_dither(image):
 
     return image
 
+def video_from_frames(output_name):
+    os.system(f'ffmpeg -framerate 25 -i ./output/frame%3d.png -r 25 -y ./output/{output_name}.mp4')
+    os.system('rm ./output/*.png')
+
 def main(video_path):
     cap = cv2.VideoCapture(video_path)
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     width, height = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
     fps = cap.get(cv2.CAP_PROP_FPS)
-    fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-    print(f"fps: {fps}, width: {width}, height: {height}")
-    out = cv2.VideoWriter(f'{os.path.splitext(video_path)[0]}_dither.mp4', fourcc, fps, (width, height))
 
     current_frame = 0
     while(cap.isOpened()):
         ret, frame = cap.read()
         if ret:
             dithered_frame = floyd_steinberg_dither(frame)
-            # cv2.imshow('frame', dithered_frame)
+            cv2.imwrite(os.path.join(os.path.dirname(__file__), '../output/frame{:03d}.png'.format(current_frame)), dithered_frame)
             current_frame += 1
             print(f'{current_frame}/{total}')
-            out.write(dithered_frame)
-            # cv2.waitKey(1)
         else:
             break
 
+    video_from_frames(os.path.splitext(os.path.basename(video_path))[0])
+
     cap.release()
-    out.release()
     cv2.destroyAllWindows()
 
-video_path = os.path.join(os.path.dirname(__file__), '../input/vid1.mp4')
+video_path = os.path.join(os.path.dirname(__file__), '../input/vid.mp4')
 main(video_path)

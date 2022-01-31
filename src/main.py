@@ -1,5 +1,7 @@
 import numpy as np
 import os
+import sys
+import getopt
 import cv2
 
 def clamp(color):
@@ -50,5 +52,20 @@ def main(video_path):
     cap.release()
     cv2.destroyAllWindows()
 
-video_path = os.path.join(os.path.dirname(__file__), '../input/vid.mp4')
-main(video_path)
+
+if __name__ == '__main__':
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'i:')
+    except getopt.GetoptError:
+        print('Usage: python main.py -i <video_name>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-i':
+            if not arg.endswith('.mp4'):
+                print('Only mp4 files are supported')
+                sys.exit(2)
+            video_path = os.path.join(os.path.dirname(__file__), f'../input/{arg}')
+            main(video_path)
+        else:
+            print('Usage: python main.py -i <video_name>')
+            sys.exit(2)

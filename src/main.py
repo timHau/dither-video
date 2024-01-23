@@ -3,12 +3,14 @@ import os
 import sys
 import getopt
 import cv2
+from numba import jit
 
+@jit(nopython=True)
 def clamp(color):
     return max(0, min(255, color))
 
+@jit(nopython=True)
 def floyd_steinberg_dither(image):
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     height, width = (image.shape[0], image.shape[1])
     
     for y in range(0, height-1):
@@ -19,15 +21,15 @@ def floyd_steinberg_dither(image):
             
             quant_error_p = old_p - new_p
 
-            image[y, x+1] = clamp(image[y, x+1] + quant_error_p * 7 / 16.0)
-            image[y+1, x-1] = clamp(image[y+1, x-1] + quant_error_p * 3 / 16.0)
-            image[y+1, x] = clamp(image[y+1, x] + quant_error_p * 5 / 16.0)
-            image[y+1, x+1] = clamp(image[y+1, x+1] + quant_error_p * 1 / 16.0)
+            image[y, x+1] = clamp(image[y, x+1] + quant_error_p * 0.4375) # 7 / 16.0
+            image[y+1, x-1] = clamp(image[y+1, x-1] + quant_error_p * 0.1875) # 3 / 16.0
+            image[y+1, x] = clamp(image[y+1, x] + quant_error_p * 0.3125) # 5 / 16.0
+            image[y+1, x+1] = clamp(image[y+1, x+1] + quant_error_p * 0.0625) # 1 / 16.0
 
     return image
 
 def video_from_frames(output_name):
-    os.system(f'ffmpeg -framerate 25 -i ./output/frame%3d.png -r 25 -y ./output/{output_name}.mp4')
+    os.system(f'ffmpeg -i ./output/frame%3d.png -r 25 ./output/"{output_name}.mp4"')
     os.system('rm ./output/*.png')
 
 def main(video_path):
@@ -40,6 +42,7 @@ def main(video_path):
     while(cap.isOpened()):
         ret, frame = cap.read()
         if ret:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             dithered_frame = floyd_steinberg_dither(frame)
             cv2.imwrite(os.path.join(os.path.dirname(__file__), '../output/frame{:03d}.png'.format(current_frame)), dithered_frame)
             current_frame += 1
